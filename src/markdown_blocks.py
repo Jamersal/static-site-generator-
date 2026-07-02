@@ -3,6 +3,9 @@ from enum import Enum
 from htmlnode import HTMLNode, ParentNode
 from inline_markdown import text_to_textnodes
 from textnode import text_node_to_html_node, TextNode, TextType
+import os
+
+
 
 
 class BlockType(Enum):
@@ -149,3 +152,31 @@ def quote_to_html_node(block: str) -> ParentNode:
     content = " ".join(new_lines)
     children = text_to_children(content)
     return ParentNode("blockquote", children)
+
+
+
+def extract_title(markdown):
+    lines = markdown.split("\n")
+    for line in lines:
+        if line.startswith("# "):
+            title = line[2:].strip()
+            return title
+    raise Exception("no h1 header found")
+
+def generate_page(from_path, template_path, dest_path):
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+    with open(from_path) as f:
+        markdown = f.read()
+    with open(template_path) as f:
+        template = f.read()
+    html_node = markdown_to_html_node(markdown)
+    html_string = html_node.to_html()
+    title = extract_title(markdown)
+    template = template.replace("{{ Title }}", title)
+    template = template.replace("{{ Content }}", html_string)
+
+    dest_dir = os.path.dirname(dest_path)
+    os.makedirs(dest_dir, exist_ok=True)
+
+    with open(dest_path, "w") as f:
+        f.write(template)
